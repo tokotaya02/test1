@@ -7,9 +7,9 @@
   ],
   "d1_databases": [
     {
-      "binding": "MY_DB",
+      "binding": "test",
       "database_name": "test_db",
-      "database_id": "b2312270-7044-4be9-8b8e-69e7cc0e9e6f"
+      "database_id": "c8bd6eaa-f2ea-46be-96fe-15712a8d2b2e"
     }
   ]
 }
