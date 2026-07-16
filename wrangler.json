@@ -1,7 +1,15 @@
- "d1_databases": [
+{
+  "name": "tutorial-cloudflare-pages",
+  "main": "worker.js",
+  "compatibility_date": "2026-07-10",
+  "rules": [
+    { "type": "Text", "globs": ["*.html", "*.css"] }
+  ],
+  "d1_databases": [
     {
-      "binding": "test",
+      "binding": "MY_DB",
       "database_name": "test_db",
-      "database_id": "c8bd6eaa-f2ea-46be-96fe-15712a8d2b2e"
+      "database_id": "b2312270-7044-4be9-8b8e-69e7cc0e9e6f"
     }
   ]
+}
