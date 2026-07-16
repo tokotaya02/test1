@@ -7,14 +7,14 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // 1. トップ画面の表示
+    // 1. トップ画面（実験システム）の表示
     if (url.pathname === "/" || url.pathname === "/index.html") {
       return new Response(htmlContent, {
         headers: { "Content-Type": "text/html; charset=utf-8" }
       });
     }
 
-    // 2. CSSの表示
+    // 2. CSSの表示 (Tailwindを使っているので不要な場合は消してもOKです)
     if (url.pathname === "/style.css") {
       return new Response(cssContent, {
         headers: { "Content-Type": "text/css; charset=utf-8" }
@@ -24,21 +24,31 @@ export default {
     // 3. データ送信（/submit）の処理
     if (url.pathname === "/submit" && request.method === "POST") {
       try {
-        const data = await request.request ? await request.json() : await request.json();
-        
-        // D1へ保存を実行
-        await env.test.prepare(
-          "INSERT INTO surveys (name, grade, q1, q2, q3, created_at) VALUES (?, ?, ?, ?, ?, ?)"
-        )
-        .bind(
-          data.name, 
-          data.grade, 
-          data.q1_answer, // カンマ区切りの文字列がそのまま入ります
-          data.q2_answer, // カンマ区切りの文字列がそのまま入ります
-          data.q3_answer, // ラジオボタンの文字列が入ります
-          data.timestamp
-        )
-        .run();
+        const data = await request.json();
+        const timestamp = new Date().toISOString();
+
+        // data.results は10問分の配列。それらをループしてINSERT文を10個作成する
+        const stmts = data.results.map(res => {
+          return env.test.prepare(`
+            INSERT INTO experiment_results (
+              subject_id, condition_group, question_number, theme, 
+              correct_answer, subject_selection, is_correct, reaction_time_ms, timestamp
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).bind(
+            data.subjectId,
+            data.conditionGroup,
+            res.qNum,
+            res.theme,
+            res.correctWord,
+            res.subjectAnswer,
+            res.isCorrect ? 1 : 0, // SQLiteでは true/false を 1/0 で保存
+            res.timeMs,
+            timestamp
+          );
+        });
+
+        // env.test に対してバッチ処理（一括保存）を実行
+        await env.test.batch(stmts);
 
         return new Response(JSON.stringify({ success: true }), {
           headers: { "Content-Type": "application/json" }
