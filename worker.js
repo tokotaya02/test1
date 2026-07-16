@@ -1,7 +1,5 @@
 // @ts-ignore
 import htmlContent from './index.html';
-// @ts-ignore
-import cssContent from './style.css';
 
 export default {
   async fetch(request, env) {
