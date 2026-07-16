@@ -12,13 +12,6 @@ export default {
       });
     }
 
-    // 2. CSSの表示 (Tailwindを使っているので不要な場合は消してもOKです)
-    if (url.pathname === "/style.css") {
-      return new Response(cssContent, {
-        headers: { "Content-Type": "text/css; charset=utf-8" }
-      });
-    }
-
     // 3. データ送信（/submit）の処理
     if (url.pathname === "/submit" && request.method === "POST") {
       try {
