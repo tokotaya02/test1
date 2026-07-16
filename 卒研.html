@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>空間オーディオによる意味的干渉の緩和：実験システム</title>
+    <!-- Tailwind CSS (Aesthetic styling) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+        .code-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between py-6 px-4">
+
+    <!-- メインコンテナ -->
+    <main class="max-w-5xl w-full mx-auto bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-8 flex-grow flex flex-col justify-between">
+        
+        <!-- ヘッダー（研究室・実験名） -->
+        <header class="border-b border-slate-800 pb-4 mb-6 flex justify-between items-center">
+            <div>
+                <span class="text-xs font-semibold text-indigo-400 tracking-wider uppercase">玉森研究室 卒業研究プロジェクト</span>
+                <h1 class="text-2xl font-bold tracking-tight text-white mt-1">空間オーディオによる有意味騒音の干渉緩和：実験システム</h1>
+            </div>
+            <div class="text-right">
+                <span id="experiment-status-badge" class="px-3 py-1 bg-slate-800 text-slate-400 text-xs font-bold rounded-full border border-slate-700">セットアップ中</span>
+            </div>
+        </header>
+
+        <!-- ==========================================================================
+           1. セットアップ画面
+           ========================================================================== -->
+        <section id="setup-screen" class="space-y-6 flex-grow flex flex-col justify-center">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- 左パネル：被験者情報 ＆ 条件設定 -->
+                <div class="space-y-6 bg-slate-950 p-6 rounded-xl border border-slate-800">
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-user-gear text-indigo-400"></i> 被験者情報・実験条件設定
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-1">被験者ID / 氏名</label>
+                            <input type="text" id="subject-id" placeholder="例：K23046" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500 transition-colors">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-1">実験条件グループ</label>
+                            <select id="experiment-condition" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500 transition-colors">
+                                <option value="A">【条件A】2Dステレオ ✕ 無関係な世間話（ラーメン）</option>
+                                <option value="B">【条件B】2Dステレオ ✕ 同文脈の会話（メロスあらすじ）</option>
+                                <option value="C" selected>【条件C】3Dオーディオ ✕ 同文脈の会話（右斜め後ろ配置）</option>
+                            </select>
+                            <p class="text-xs text-slate-400 mt-1.5 leading-relaxed">
+                                ※ 条件Cでは、Web Audio APIのHRTF立体音響を用いて、音像を右斜め後ろ（135度方向）に自動定位させます。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右パネル：音声ファイルのドラッグ＆ドロップ ＆ ステレオテスト -->
+                <div class="space-y-6 bg-slate-950 p-6 rounded-xl border border-slate-800 flex flex-col justify-between">
+                    <div class="space-y-4">
+                        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-file-audio text-indigo-400"></i> 実験用音声ソースの読み込み
+                        </h2>
+                        
+                        <!-- ドラッグ＆ドロップ領域 -->
+                        <div class="grid grid-cols-1 gap-3">
+                            <div class="border border-dashed border-slate-700 hover:border-indigo-500 rounded-lg p-4 text-center cursor-pointer bg-slate-900 transition-all" onclick="document.getElementById('file-ramen').click()">
+                                <input type="file" id="file-ramen" accept="audio/*" class="hidden" onchange="handleFileSelect(this, 'ramen')">
+                                <i class="fa-solid fa-bowl-food text-slate-500 mb-2 text-xl" id="icon-ramen"></i>
+                                <p class="text-xs font-semibold text-slate-300" id="label-ramen">無関係な雑談（ラーメン話）のWAV/MP3を選択</p>
+                            </div>
+
+                            <div class="border border-dashed border-slate-700 hover:border-indigo-500 rounded-lg p-4 text-center cursor-pointer bg-slate-900 transition-all" onclick="document.getElementById('file-melos').click()">
+                                <input type="file" id="file-melos" accept="audio/*" class="hidden" onchange="handleFileSelect(this, 'melos')">
+                                <i class="fa-solid fa-person-running text-slate-500 mb-2 text-xl" id="icon-melos"></i>
+                                <p class="text-xs font-semibold text-slate-300" id="label-melos">同じ文脈の雑談（メロスあらすじ）のWAV/MP3を選択</p>
+                            </div>
+                        </div>
+
+                        <!-- ステレオヘッドホン簡易テスト -->
+                        <div class="bg-slate-900 border border-slate-800 rounded-lg p-3 flex justify-between items-center">
+                            <div>
+                                <p class="text-xs font-bold text-slate-300">ヘッドホン左右出力テスト</p>
+                                <p class="text-[10px] text-slate-500">左右が正しく聞こえるかクリックして確認</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="testStereo('left')" class="px-2.5 py-1 text-[11px] bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 rounded-md font-semibold flex items-center gap-1">
+                                    <i class="fa-solid fa-left-long text-blue-400"></i> 左テスト
+                                </button>
+                                <button onclick="testStereo('right')" class="px-2.5 py-1 text-[11px] bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 rounded-md font-semibold flex items-center gap-1">
+                                    右テスト <i class="fa-solid fa-right-long text-emerald-400"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 開始ボタン -->
+                    <button onclick="startExperiment()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg shadow-lg hover:shadow-indigo-500/20 transform active:scale-[0.98] transition-all flex justify-center items-center gap-2">
+                        <i class="fa-solid fa-circle-play"></i> 実験を開始する
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==========================================================================
+           2. 実験本番画面
+           ========================================================================== -->
+        <section id="experiment-screen" class="hidden flex-grow flex flex-col justify-between space-y-6">
+            
+            <!-- 上部：実験中のメタ情報・可視化レーダー -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center bg-slate-950 p-4 rounded-xl border border-slate-800">
+                <!-- 被験者・条件 -->
+                <div class="space-y-1">
+                    <p class="text-xs text-slate-500 font-bold uppercase">現在進行中の被験者</p>
+                    <p class="text-sm font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-user text-slate-400"></i> <span id="display-subject-id">ID: ----</span>
+                    </p>
+                    <p class="text-xs text-indigo-400 font-semibold" id="display-condition">条件: --</p>
+                </div>
+
+                <!-- 音響定位レーダー (SVG) -->
+                <div class="flex justify-center items-center flex-col">
+                    <span class="text-[10px] text-slate-500 font-bold mb-1">音響定位の仮想レーダー</span>
+                    <svg viewBox="0 0 100 100" class="w-20 h-20 overflow-visible">
+                        <!-- 頭部の輪郭 -->
+                        <circle cx="50" cy="50" r="16" fill="#1e293b" stroke="#475569" stroke-width="1.5"/>
+                        <!-- ヘッドホン -->
+                        <rect x="30" y="44" width="4" height="12" rx="2" fill="#4f46e5"/>
+                        <rect x="66" y="44" width="4" height="12" rx="2" fill="#4f46e5"/>
+                        <path d="M 32 44 A 18 18 0 0 1 68 44" fill="none" stroke="#4f46e5" stroke-width="2"/>
+                        <!-- 鼻（方向を示す） -->
+                        <polygon points="50,30 46,34 54,34" fill="#475569"/>
+                        <!-- 空間グリッド -->
+                        <circle cx="50" cy="50" r="32" stroke="#334155" stroke-width="0.5" stroke-dasharray="3,3" fill="none"/>
+                        <!-- 音源の方向 (条件に応じてアニメーション付きで配置) -->
+                        <circle id="radar-sound-source" cx="50" cy="50" r="4" fill="#10b981" class="transition-all duration-500">
+                            <animate attributeName="r" values="3;5;3" dur="2s" repeatCount="indefinite" />
+                        </circle>
+                        <!-- 音波の可視化線 -->
+                        <line id="radar-sound-line" x1="50" y1="50" x2="50" y2="50" stroke="#10b981" stroke-width="1" stroke-dasharray="2,2" opacity="0.5"/>
+                    </svg>
+                    <span id="radar-label" class="text-[10px] text-slate-400 mt-1">定位：未設定</span>
+                </div>
+
+                <!-- 進行度インジケーター -->
+                <div class="text-right">
+                    <p class="text-xs text-slate-500 font-bold">進捗度</p>
+                    <p class="text-xl font-bold text-white"><span id="current-question-num" class="text-indigo-400">1</span> / 10 問</p>
+                    <div class="w-full bg-slate-800 rounded-full h-1.5 mt-2 overflow-hidden">
+                        <div id="progress-bar-fill" class="bg-indigo-500 h-1.5 transition-all duration-300" style="width: 10%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 中央：読解・思考タスク提示エリア -->
+            <div class="bg-slate-950 p-8 rounded-xl border-t-4 border-indigo-500 border-x border-b border-slate-800 shadow-lg flex-grow flex flex-col justify-center space-y-6">
+                <!-- 問題のヘッダー -->
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                    <span class="px-2.5 py-1 bg-indigo-950 text-indigo-300 text-xs font-bold rounded border border-indigo-800 flex items-center gap-1.5">
+                        <i class="fa-solid fa-book-open"></i> 国語読解・意味的干渉タスク（走れメロス）
+                    </span>
+                    <span class="text-xs text-slate-500 code-font">解答時間: <span id="live-timer">0.00</span>s</span>
+                </div>
+
+                <!-- 問題の提示文章 -->
+                <div class="space-y-2">
+                    <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">提示文章</span>
+                    <div id="passage-text" class="text-sm text-slate-300 leading-relaxed font-normal bg-slate-900 border border-slate-800 p-4 rounded-lg italic">
+                        <!-- ここに文章が表示されます -->
+                    </div>
+                </div>
+
+                <!-- 設問 -->
+                <div class="space-y-4">
+                    <div class="flex items-start gap-2">
+                        <i class="fa-solid fa-circle-question text-indigo-400 mt-1"></i>
+                        <h3 id="question-text" class="text-base md:text-lg text-slate-100 font-bold leading-normal">
+                            <!-- ここに質問が表示されます -->
+                        </h3>
+                    </div>
+
+                    <!-- 選択肢（4択） -->
+                    <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                        <!-- ここに動的に選択肢ボタンが生成されます -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 下部：操作ボタン -->
+            <div class="flex justify-end pt-4 border-t border-slate-800">
+                <button id="next-btn" disabled onclick="submitAnswer()" class="px-8 py-3 bg-indigo-600 disabled:bg-slate-800 disabled:text-slate-500 hover:bg-indigo-500 text-white font-bold rounded-lg shadow-lg hover:shadow-indigo-500/20 active:scale-[0.98] transition-all flex items-center gap-2">
+                    回答を送信して次へ <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- ==========================================================================
+           3. 実験完了・レポート画面
+           ========================================================================== -->
+        <section id="results-screen" class="hidden flex-grow flex flex-col justify-between space-y-6">
+            <div class="text-center space-y-2 py-4">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-emerald-950 border border-emerald-800 rounded-full text-emerald-400 mb-2">
+                    <i class="fa-solid fa-circle-check text-3xl"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-white">実験が正常に完了しました！</h2>
+                <p class="text-slate-400 max-w-lg mx-auto text-sm">
+                    お疲れ様でした。同一の言語情報（正しいストーリー）を耳から聞きながら、読解課題を解いた際の意味的干渉がミリ秒単位で記録されました。
+                </p>
+            </div>
+
+            <!-- 分析ダッシュボード -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- 基本情報 -->
+                <div class="bg-slate-950 p-6 rounded-xl border border-slate-800 space-y-4">
+                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider">被験データ概要</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center pb-2 border-b border-slate-900">
+                            <span class="text-xs text-slate-500">被験者ID</span>
+                            <span class="text-sm font-bold text-white code-font" id="res-subject-id">--</span>
+                        </div>
+                        <div class="flex justify-between items-center pb-2 border-b border-slate-900">
+                            <span class="text-xs text-slate-500">割り当て条件</span>
+                            <span class="text-sm font-bold text-indigo-400 font-semibold" id="res-condition">--</span>
+                        </div>
+                        <div class="flex justify-between items-center pb-2 border-b border-slate-900">
+                            <span class="text-xs text-slate-500">国語読解正答率</span>
+                            <span class="text-lg font-bold text-white" id="res-accuracy">--</span>
+                        </div>
+                        <div class="flex justify-between items-center pb-2">
+                            <span class="text-xs text-slate-500">平均解答時間</span>
+                            <span class="text-lg font-bold text-white code-font" id="res-avg-time">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 反応速度（解答速度）の棒グラフ表示 (SVG) -->
+                <div class="bg-slate-950 p-6 rounded-xl border border-slate-800 col-span-1 md:col-span-2 flex flex-col justify-between">
+                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">設問ごとの解答時間分析 (ms)</h3>
+                    <div id="chart-area" class="h-40 flex items-end justify-between px-2 pt-6 pb-2 border-b border-slate-800">
+                        <!-- ここに動的にグラフバーが差し込まれます -->
+                    </div>
+                    <div class="flex justify-between text-[10px] text-slate-500 font-bold px-2 mt-1">
+                        <span>Q1</span><span>Q2</span><span>Q3</span><span>Q4</span><span>Q5</span>
+                        <span>Q6</span><span>Q7</span><span>Q8</span><span>Q9</span><span>Q10</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 詳細テーブル -->
+            <div class="bg-slate-950 rounded-xl border border-slate-800 overflow-hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-900 border-b border-slate-800 text-[11px] text-slate-400 uppercase font-bold tracking-wider">
+                            <th class="p-3">設問</th>
+                            <th class="p-3">問題テーマ</th>
+                            <th class="p-3">被験者の選択</th>
+                            <th class="p-3">判定</th>
+                            <th class="p-3">解答時間</th>
+                        </tr>
+                    </thead>
+                    <tbody id="res-table-body" class="text-xs divide-y divide-slate-900 text-slate-300">
+                        <!-- ここに動的にテーブル行が生成されます -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- アクションボタン -->
+            <div class="flex justify-between items-center pt-4 border-t border-slate-800">
+                <button onclick="resetSystem()" class="px-5 py-2.5 text-xs font-semibold text-slate-400 hover:text-white border border-slate-700 hover:border-slate-500 rounded-lg transition-colors">
+                    <i class="fa-solid fa-rotate-left mr-1"></i> 別の被験者で実験を行う
+                </button>
+                <button onclick="downloadCSV()" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-lg hover:shadow-emerald-500/20 active:scale-[0.98] transition-all flex items-center gap-1.5">
+                    <i class="fa-solid fa-file-csv"></i> 実験データ(CSV)をダウンロード
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- フッター -->
+    <footer class="max-w-5xl w-full mx-auto mt-4 text-center text-[11px] text-slate-500 flex justify-between items-center px-4">
+        <p>&copy; 2026 情報科学部 コンピュータシステム専攻 玉森研究室</p>
+        <p class="font-semibold text-indigo-400/80">★ オープンキャンパス：ヘッドホンを装着して「脳のバグ＆空間オーディオ緩和体験」実施中！</p>
+    </footer>
+
+    <!-- ==========================================================================
+       JavaScript（実験制御ロジック ＆ Web Audio API）
+       ========================================================================== -->
+    <script>
+        // Web Audio APIのコンテキストとオーディオ管理
+        let audioCtx = null;
+        let ramenBuffer = null;
+        let melosBuffer = null;
+        let activeSourceNode = null;
+        let activePannerNode = null;
+
+        // 被験者の回答データ記録用
+        let currentGroup = 'C'; 
+        let subjectId = '';
+        let currentQuestionIndex = 0;
+        let questionStartTime = 0;
+        let results = [];
+        let liveTimerInterval = null;
+
+        // 『走れメロス』読解問題データベース (リスニング化を回避した厳密な意味的干渉仕様)
+        // 音声（あらすじ）と文脈を同じにしつつ、画面の文章を読まなければ解けない設問設計。
+        const questions = [
+            {
+                passage: "メロスは激怒した。必ず、邪智暴虐の王を除かなければならぬと決意した。けれども邪悪に対しては、人一倍に敏感であった。",
+                text: "メロスが王を排除しようと決意した直接の動機は、本文中では彼のどのような性質によるものと述べられているか。",
+                options: ["政治への深い関心", "邪悪に対する強い敏感さ", "王宮への強い憧れ", "羊飼いとしての責任感"],
+                correct: "邪悪に対する強い敏感さ",
+                theme: "メロスの決意"
+            },
+            {
+                passage: "メロスには政治がわからぬ。メロスは、村の牧人である。笛を吹き、羊と遊んで暮して来た。",
+                text: "本文において、メロスの日常の様子（生活形態）として「誤っている」ものはどれか。",
+                options: ["政治の仕組みを熟知している", "村の牧人（羊飼い）である", "笛を吹いて過ごしている", "羊と遊んで暮らしている"],
+                correct: "政治の仕組みを熟知している",
+                theme: "メロスの素性"
+            },
+            {
+                passage: "きょう未明メロスは村を出発し、野を越え山越え、十里はなれた此のシラクサの市にやって来た。メロスには父も母もない。女房もない。十六の、内気な妹と二人暮しだ。",
+                text: "メロスがシラクサの市にやってきた「距離」と「同行者」の説明として正しいものはどれか。",
+                options: ["五里離れた市に、妹と二人で来た", "十里離れた市に、一人で来た", "十里離れた市に、妹と二人で来た", "五里離れた市に、一人で来た"],
+                correct: "十里離れた市に、一人で来た",
+                theme: "シラクサへの移動"
+            },
+            {
+                passage: "この妹は、近々、一人の律気な牧人を婿として迎えることになっていた。その婚礼の式のために、メロスは、遥々市にやって来たのだ。",
+                text: "メロスの妹が近々婿（夫）として迎える予定の人物の職業は何か。",
+                options: ["王宮の警備兵", "シラクサの商人", "律気な牧人", "街の石工"],
+                correct: "律気な牧人",
+                theme: "妹の婚礼"
+            },
+            {
+                passage: "街の様子が怪しい。ひっそりしている。もう既に日も落ちて、夜のせいばかりではあるまい。のんきなメロスも、だんだん不安になって来た。",
+                text: "メロスがシラクサの街に入った際、のんきな彼が「不安を抱いた要因」は何か。",
+                options: ["急激な雨に見舞われたこと", "街全体がひっそりと静まり返っている様子", "妹からの不吉な知らせを受けたこと", "兵士に後をつけられている気配を感じたこと"],
+                correct: "街全体がひっそりと静まり返っている様子",
+                theme: "街の異変"
+            },
+            {
+                passage: "王は人を疑う。近頃は、臣下の心がかりをも疑い、少しく派手な暮しをしている者をば、人質ひとりずつ差し出させ、それを磔刑に処した。",
+                text: "本文において、王が人々に人質を差し出させ処刑する「近頃の基準」として書かれているものはどれか。",
+                options: ["王の暗殺計画に関与した者", "王宮から物品を盗み出した者", "少し派手な暮らしをしている者", "税金を納めるのを怠った者"],
+                correct: "少し派手な暮らしをしている者",
+                theme: "王の疑心"
+            },
+            {
+                passage: "メロスには無二の友がある。セリヌンティウスである。今は此のシラクサの街で、石工の仕事をしている。その友を、これから訪ねてみるつもりなのだ。",
+                text: "メロスの無二の友であるセリヌンティウスは、現在この街でどのような仕事をしているか。",
+                options: ["羊を飼う牧人", "石工（いしく）", "武器を造る鍛冶屋", "王宮お抱えの学者"],
+                correct: "石工（いしく）",
+                theme: "親友の存在"
+            },
+            {
+                passage: "「待ってくれ。私に三日間の日限を与えてくれ。妹の結婚式を挙げさせてくれ。私は、必ずここに戻って来る」「身代り、セリヌンティウスをここに置こう。」",
+                text: "メロスが王に求めた猶予日数と、身代わりとして置いていくことになった人物の組み合わせとして正しいものはどれか。",
+                options: ["五日間の猶予 ✕ 妹", "三日間の猶予 ✕ 妹", "三日間の猶予 ✕ セリヌンティウス", "五日間の猶予 ✕ セリヌンティウス"],
+                correct: "三日間の猶予 ✕ セリヌンティウス",
+                theme: "誓約と人質"
+            },
+            {
+                passage: "日は既に西に傾きつつある。ぜんたい、遅れたのは誰のせいだ。身を投げ出して、大声をあげて泣きたいほどの疲労が襲ってきた。一歩も歩けぬのだ。",
+                text: "メロスが「大声をあげて泣きたいほど」の極限状況に陥った主な原因は何か。",
+                options: ["王宮から追っ手が迫ってきたから", "裏切られたと思い込んでしまったから", "極度の肉体的疲労が襲ってきたから", "妹への贈り物を失くしたことに気付いたから"],
+                correct: "極度の肉体的疲労が襲ってきたから",
+                theme: "限界と葛藤"
+            },
+            {
+                passage: "メロスは、裸体のまま、まぶしい夕陽の光の中で、ひどく赤面した。ひとりの少女が、緋のマントをメロスに捧げた。",
+                text: "約束の場所にギリギリ間に合ったメロスが、最後に「ひどく赤面した」のはなぜか。",
+                options: ["王に無実を証明できた誇らしさから", "裸（全裸）のまま、夕陽の光の中で立ち尽くしていたから", "セリヌンティウスに強烈に叱咤されたから", "群衆から笑いものにされて怒ったから"],
+                correct: "裸（全裸）のまま、夕陽の光の中で立ち尽くしていたから",
+                theme: "真実の結末"
+            }
+        ];
+
+        // 1. ファイル読み込みハンドリング (ローカルのCORSエラー完全防止策)
+        function handleFileSelect(input, type) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const label = document.getElementById(`label-${type}`);
+            const icon = document.getElementById(`icon-${type}`);
+            
+            label.innerText = `読み込み中... (${(file.size / 1024 / 1024).toFixed(1)}MB)`;
+            icon.className = "fa-solid fa-spinner fa-spin text-indigo-400 mb-2 text-xl";
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const arrayBuffer = e.target.result;
+                
+                // AudioContextの立ち上げ
+                initAudioContext();
+
+                audioCtx.decodeAudioData(arrayBuffer, function(buffer) {
+                    if (type === 'ramen') {
+                        ramenBuffer = buffer;
+                        label.innerText = "ラーメン話（条件A用）の読み込み完了！";
+                        icon.className = "fa-solid fa-check text-emerald-400 mb-2 text-xl";
+                    } else {
+                        melosBuffer = buffer;
+                        label.innerText = "メロスあらすじ（条件B・C用）の読み込み完了！";
+                        icon.className = "fa-solid fa-check text-emerald-400 mb-2 text-xl";
+                    }
+                    checkSetupReady();
+                }, function(err) {
+                    label.innerText = "エラー：非対応ファイル形式です";
+                    icon.className = "fa-solid fa-triangle-exclamation text-red-500 mb-2 text-xl";
+                });
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Web Audio API 初期化
+        function initAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // セットアップの検証
+        function checkSetupReady() {
+            const subject = document.getElementById('subject-id').value.trim();
+            const badge = document.getElementById('experiment-status-badge');
+            
+            if (subject && ramenBuffer && melosBuffer) {
+                badge.innerText = "実験準備完了";
+                badge.className = "px-3 py-1 bg-emerald-950 text-emerald-400 text-xs font-bold rounded-full border border-emerald-800";
+                return true;
+            } else {
+                badge.innerText = "セットアップ中";
+                badge.className = "px-3 py-1 bg-slate-800 text-slate-400 text-xs font-bold rounded-full border border-slate-700";
+                return false;
+            }
+        }
+
+        // 簡易ステレオテスト音の再生
+        function testStereo(pan) {
+            initAudioContext();
+            
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            const panner = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : null;
+
+            osc.frequency.value = 1000; // 1kHz
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.8);
+
+            if (panner) {
+                panner.pan.value = (pan === 'left') ? -1.0 : 1.0;
+                osc.connect(panner);
+                panner.connect(gain);
+            } else {
+                osc.connect(gain);
+            }
+
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.8);
+        }
+
+        // 2. 実験開始
+        function startExperiment() {
+            subjectId = document.getElementById('subject-id').value.trim();
+            currentGroup = document.getElementById('experiment-condition').value;
+
+            if (!subjectId) {
+                alert("被験者IDを入力してください。");
+                return;
+            }
+            if (!ramenBuffer || !melosBuffer) {
+                alert("実験を開始するには、A用とB・C用の音声ファイルを両方読み込んでください。");
+                return;
+            }
+
+            // 音響コンテキストの開始
+            initAudioContext();
+
+            // 画面切り替え
+            document.getElementById('setup-screen').classList.add('hidden');
+            document.getElementById('experiment-screen').classList.remove('hidden');
+            document.getElementById('experiment-status-badge').innerText = "実験進行中";
+            document.getElementById('experiment-status-badge').className = "px-3 py-1 bg-indigo-950 text-indigo-400 text-xs font-bold rounded-full border border-indigo-800";
+
+            // メタ情報の更新
+            document.getElementById('display-subject-id').innerText = `ID: ${subjectId}`;
+            const condLabels = {
+                'A': "条件A：2Dステレオ ✕ 無関係話（ラーメン）",
+                'B': "条件B：2Dステレオ ✕ 同文脈話（メロス）",
+                'C': "条件C：3Dオーディオ ✕ 同文脈話（メロス）"
+            };
+            document.getElementById('display-condition').innerText = condLabels[currentGroup];
+
+            // 空間定位レーダーの描画同期
+            updateRadar();
+
+            // バックグラウンド有意味騒音の再生開始
+            playBackgroundNoise();
+
+            // 設問のロード
+            currentQuestionIndex = 0;
+            results = [];
+            loadQuestion();
+        }
+
+        // 有意味騒音を流しっぱなしにする（Web Audio APIによる立体音響処理）
+        function playBackgroundNoise() {
+            stopBackgroundNoise();
+
+            activeSourceNode = audioCtx.createBufferSource();
+            
+            // 音源バッファの割り当て
+            if (currentGroup === 'A') {
+                activeSourceNode.buffer = ramenBuffer;
+            } else {
+                activeSourceNode.buffer = melosBuffer;
+            }
+            
+            activeSourceNode.loop = true;
+
+            // 定位（パンニング）設計
+            if (currentGroup === 'C') {
+                // 条件C: Web Audio APIの3D空間音響(PannerNode)を利用して「右斜め後ろ」に音像を仮想定位
+                activePannerNode = audioCtx.createPanner();
+                activePannerNode.panningModel = 'HRTF'; // 頭部伝達関数による高度な立体定位
+                activePannerNode.distanceModel = 'inverse';
+                
+                // 右斜め後ろの座標を定義：x = 1.5, y = 0, z = 1.5 (正面がZマイナスなので、Zプラス方向が後ろ)
+                if (activePannerNode.positionX) {
+                    activePannerNode.positionX.value = 1.5;
+                    activePannerNode.positionY.value = 0;
+                    activePannerNode.positionZ.value = 1.5;
+                } else {
+                    activePannerNode.setPosition(1.5, 0, 1.5);
+                }
+
+                activeSourceNode.connect(activePannerNode);
+                activePannerNode.connect(audioCtx.destination);
+            } else {
+                // 条件A・B: 通常の等価ステレオ再生（左右一律）
+                activeSourceNode.connect(audioCtx.destination);
+            }
+
+            activeSourceNode.start(0);
+        }
+
+        function stopBackgroundNoise() {
+            if (activeSourceNode) {
+                try {
+                    activeSourceNode.stop();
+                } catch(e) {}
+                activeSourceNode.disconnect();
+                activeSourceNode = null;
+            }
+            if (activePannerNode) {
+                activePannerNode.disconnect();
+                activePannerNode = null;
+            }
+        }
+
+        // 定位レーダーのグラフィック表示を制御
+        function updateRadar() {
+            const sourceDot = document.getElementById('radar-sound-source');
+            const sourceLine = document.getElementById('radar-sound-line');
+            const label = document.getElementById('radar-label');
+
+            if (currentGroup === 'C') {
+                // 右斜め後ろ定位のSVG座標 (原点50,50から見て右下)
+                sourceDot.setAttribute('cx', '70');
+                sourceDot.setAttribute('cy', '70');
+                sourceDot.setAttribute('fill', '#10b981'); 
+                
+                sourceLine.setAttribute('x1', '50');
+                sourceLine.setAttribute('y1', '50');
+                sourceLine.setAttribute('x2', '70');
+                sourceLine.setAttribute('y2', '70');
+                sourceLine.setAttribute('stroke', '#10b981');
+                
+                label.innerText = "定位：右斜め後ろ (3D HRTF)";
+                label.className = "text-[10px] text-emerald-400 mt-1 font-bold";
+            } else if (currentGroup === 'B') {
+                // 2D：頭内定位（真ん中）
+                sourceDot.setAttribute('cx', '50');
+                sourceDot.setAttribute('cy', '50');
+                sourceDot.setAttribute('fill', '#ef4444'); 
+                
+                sourceLine.setAttribute('x1', '50');
+                sourceLine.setAttribute('y1', '50');
+                sourceLine.setAttribute('x2', '50');
+                sourceLine.setAttribute('y2', '50');
+                
+                label.innerText = "定位：頭内定位 (2D)";
+                label.className = "text-[10px] text-red-400 mt-1 font-bold";
+            } else {
+                // 2D無関係：頭内定位（真ん中）
+                sourceDot.setAttribute('cx', '50');
+                sourceDot.setAttribute('cy', '50');
+                sourceDot.setAttribute('fill', '#64748b'); 
+                
+                sourceLine.setAttribute('x1', '50');
+                sourceLine.setAttribute('y1', '50');
+                sourceLine.setAttribute('x2', '50');
+                sourceLine.setAttribute('y2', '50');
+                
+                label.innerText = "定位：頭内定位 (2D)";
+                label.className = "text-[10px] text-slate-400 mt-1 font-bold";
+            }
+        }
+
+        // 3. 設問のロード・制御
+        function loadQuestion() {
+            if (currentQuestionIndex >= questions.length) {
+                finishExperiment();
+                return;
+            }
+
+            // 進捗の更新
+            document.getElementById('current-question-num').innerText = currentQuestionIndex + 1;
+            document.getElementById('progress-bar-fill').style.width = `${(currentQuestionIndex + 1) * 10}%`;
+
+            const q = questions[currentQuestionIndex];
+            
+            // 提示文と問いのレンダリング
+            document.getElementById('passage-text').innerText = q.passage;
+            document.getElementById('question-text').innerText = q.text;
+
+            // 選択肢のレンダリング
+            const optContainer = document.getElementById('options-container');
+            optContainer.innerHTML = '';
+
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "flex items-center gap-3 w-full bg-slate-900 hover:bg-slate-800 text-left px-5 py-4 rounded-lg border border-slate-700 hover:border-indigo-500 text-slate-300 font-medium text-sm transition-all";
+                btn.innerHTML = `
+                    <span class="flex items-center justify-center w-6 h-6 rounded-full bg-slate-800 border border-slate-600 text-[10px] font-bold text-slate-400 uppercase group-hover:border-indigo-500">${String.fromCharCode(65 + idx)}</span>
+                    <span>${opt}</span>
+                `;
+                btn.onclick = () => selectOption(btn, opt);
+                optContainer.appendChild(btn);
+            });
+
+            // 回答ボタンの非活性化
+            document.getElementById('next-btn').disabled = true;
+
+            // 反応速度タイマーの開始
+            questionStartTime = performance.now();
+            
+            if (liveTimerInterval) clearInterval(liveTimerInterval);
+            liveTimerInterval = setInterval(() => {
+                const elapsed = (performance.now() - questionStartTime) / 1000;
+                document.getElementById('live-timer').innerText = elapsed.toFixed(2);
+            }, 50);
+        }
+
+        let selectedAnswerValue = null;
+
+        function selectOption(selectedBtn, value) {
+            const buttons = document.getElementById('options-container').querySelectorAll('button');
+            buttons.forEach(btn => {
+                btn.className = "flex items-center gap-3 w-full bg-slate-900 hover:bg-slate-800 text-left px-5 py-4 rounded-lg border border-slate-700 text-slate-300 font-medium text-sm transition-all";
+                btn.querySelector('span').className = "flex items-center justify-center w-6 h-6 rounded-full bg-slate-800 border border-slate-600 text-[10px] font-bold text-slate-400 uppercase";
+            });
+
+            selectedBtn.className = "flex items-center gap-3 w-full bg-indigo-950/50 text-left px-5 py-4 rounded-lg border-2 border-indigo-500 text-white font-medium text-sm transition-all";
+            selectedBtn.querySelector('span').className = "flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 border border-indigo-400 text-[10px] font-bold text-white uppercase";
+
+            selectedAnswerValue = value;
+            document.getElementById('next-btn').disabled = false;
+        }
+
+        function submitAnswer() {
+            const stopTime = performance.now();
+            const reactionTimeMs = Math.round(stopTime - questionStartTime);
+            
+            if (liveTimerInterval) clearInterval(liveTimerInterval);
+
+            const q = questions[currentQuestionIndex];
+            const isCorrect = (selectedAnswerValue === q.correct);
+
+            // 被験データ配列への格納
+            results.push({
+                qNum: currentQuestionIndex + 1,
+                theme: q.theme,
+                correctWord: q.correct,
+                subjectAnswer: selectedAnswerValue,
+                isCorrect: isCorrect,
+                timeMs: reactionTimeMs
+            });
+
+            currentQuestionIndex++;
+            selectedAnswerValue = null;
+            loadQuestion();
+        }
+
+        // 4. 実験の完了処理
+        function finishExperiment() {
+            stopBackgroundNoise();
+
+            // 画面切り替え
+            document.getElementById('experiment-screen').classList.add('hidden');
+            document.getElementById('results-screen').classList.remove('hidden');
+            document.getElementById('experiment-status-badge').innerText = "実験完了";
+            document.getElementById('experiment-status-badge').className = "px-3 py-1 bg-emerald-950 text-emerald-400 text-xs font-bold rounded-full border border-emerald-800";
+
+            document.getElementById('res-subject-id').innerText = subjectId;
+            const groupText = { 'A': 'A (2D・無関係)', 'B': 'B (2D・同文脈：干渉大)', 'C': 'C (3D・同文脈：干渉緩和)' }[currentGroup];
+            document.getElementById('res-condition').innerText = groupText;
+
+            const correctCount = results.filter(r => r.isCorrect).length;
+            document.getElementById('res-accuracy').innerText = `${correctCount} / 10問 (${correctCount * 10}%)`;
+
+            const totalMs = results.reduce((acc, curr) => acc + curr.timeMs, 0);
+            const avgMs = Math.round(totalMs / results.length);
+            document.getElementById('res-avg-time').innerText = `${avgMs.toLocaleString()} ms`;
+
+            // 詳細結果テーブルの生成
+            const tbody = document.getElementById('res-table-body');
+            tbody.innerHTML = '';
+            results.forEach(res => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="p-3 code-font">Q${res.qNum}</td>
+                    <td class="p-3 font-semibold text-slate-200">${res.theme}</td>
+                    <td class="p-3 font-medium text-slate-300">${res.subjectAnswer}</td>
+                    <td class="p-3">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${res.isCorrect ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-red-950 text-red-400 border border-red-800'}">
+                            ${res.isCorrect ? '正解' : '不正解'}
+                        </span>
+                    </td>
+                    <td class="p-3 code-font">${res.timeMs.toLocaleString()} ms</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // 解答スピードのバーチャートを動的描画
+            renderChart(results);
+        }
+
+        // SVGによる簡易的なグラフ表示
+        function renderChart(data) {
+            const chartArea = document.getElementById('chart-area');
+            chartArea.innerHTML = '';
+
+            const maxTime = Math.max(...data.map(d => d.timeMs), 5000); 
+
+            data.forEach((d, idx) => {
+                const heightPercent = (d.timeMs / maxTime) * 100;
+                const barWrapper = document.createElement('div');
+                barWrapper.className = "flex flex-col items-center flex-grow group relative h-full justify-end";
+                
+                let barColor = "bg-indigo-500 hover:bg-indigo-400";
+                if (!d.isCorrect) barColor = "bg-slate-700 hover:bg-slate-600"; 
+
+                barWrapper.innerHTML = `
+                    <span class="absolute -top-6 bg-slate-950 border border-slate-800 text-[10px] text-white px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity code-font font-bold z-10 shadow">
+                        ${d.timeMs}ms
+                    </span>
+                    <div class="w-6 ${barColor} rounded-t transition-all duration-500 ease-out shadow-lg" style="height: ${heightPercent}%;"></div>
+                `;
+                chartArea.appendChild(barWrapper);
+            });
+        }
+
+        // 5. システムのリセット
+        function resetSystem() {
+            document.getElementById('results-screen').classList.add('hidden');
+            document.getElementById('setup-screen').classList.remove('hidden');
+            document.getElementById('experiment-status-badge').innerText = "セットアップ中";
+            document.getElementById('experiment-status-badge').className = "px-3 py-1 bg-slate-800 text-slate-400 text-xs font-bold rounded-full border border-slate-700";
+
+            document.getElementById('subject-id').value = '';
+            checkSetupReady();
+        }
+
+        // 6. CSVダウンロード (卒論分析用のデータエクスポート)
+        function downloadCSV() {
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Subject ID,Condition Group,Question Number,Theme,Correct Answer,Subject Selection,Is Correct,Reaction Time (ms)\r\n";
+            
+            results.forEach(res => {
+                const row = [
+                    subjectId,
+                    currentGroup,
+                    res.qNum,
+                    res.theme,
+                    res.correctWord,
+                    res.subjectAnswer,
+                    res.isCorrect ? "1" : "0",
+                    res.timeMs
+                ].join(",");
+                csvContent += row + "\r\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Experiment_Result_${subjectId}_Group_${currentGroup}.csv`);
+            document.body.appendChild(link); 
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        document.getElementById('subject-id').addEventListener('input', checkSetupReady);
+    </script>
+</body>
+</html>
