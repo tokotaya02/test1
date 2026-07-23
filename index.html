@@ -214,80 +214,20 @@
         <!-- ==========================================================================
            3. 実験完了・レポート画面
            ========================================================================== -->
-        <section id="results-screen" class="hidden flex-grow flex flex-col justify-between space-y-6">
-            <div class="text-center space-y-2 py-4">
-                <div class="inline-flex items-center justify-center w-16 h-16 bg-emerald-950 border border-emerald-800 rounded-full text-emerald-400 mb-2">
-                    <i class="fa-solid fa-circle-check text-3xl"></i>
+        <section id="results-screen" class="hidden flex-grow flex flex-col justify-center items-center space-y-8 h-full py-12">
+            <div class="text-center space-y-4">
+                <div class="inline-flex items-center justify-center w-24 h-24 bg-emerald-950 border-2 border-emerald-800 rounded-full text-emerald-400 mb-4 shadow-lg shadow-emerald-900/20">
+                    <i class="fa-solid fa-check text-5xl"></i>
                 </div>
-                <h2 class="text-2xl font-bold text-white">実験が正常に完了しました！</h2>
-                <p class="text-slate-400 max-w-lg mx-auto text-sm">
-                    お疲れ様でした。同一の言語情報（正しいストーリー）を耳から聞きながら、読解課題を解いた際の意味的干渉がミリ秒単位で記録されました。
+                <h2 class="text-3xl font-bold text-white tracking-wider">データが送信されました</h2>
+                <p class="text-slate-400 max-w-md mx-auto text-base leading-relaxed">
+                    実験へのご協力ありがとうございました。<br>回答データはデータベースに安全に保存されました。
                 </p>
             </div>
 
-            <!-- 分析ダッシュボード -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- 基本情報 -->
-                <div class="bg-slate-950 p-6 rounded-xl border border-slate-800 space-y-4">
-                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider">被験データ概要</h3>
-                    <div class="space-y-3">
-                        <div class="flex justify-between items-center pb-2 border-b border-slate-900">
-                            <span class="text-xs text-slate-500">被験者ID</span>
-                            <span class="text-sm font-bold text-white code-font" id="res-subject-id">--</span>
-                        </div>
-                        <div class="flex justify-between items-center pb-2 border-b border-slate-900">
-                            <span class="text-xs text-slate-500">割り当て条件</span>
-                            <span class="text-sm font-bold text-indigo-400 font-semibold" id="res-condition">--</span>
-                        </div>
-                        <div class="flex justify-between items-center pb-2 border-b border-slate-900">
-                            <span class="text-xs text-slate-500">国語読解正答率</span>
-                            <span class="text-lg font-bold text-white" id="res-accuracy">--</span>
-                        </div>
-                        <div class="flex justify-between items-center pb-2">
-                            <span class="text-xs text-slate-500">平均解答時間</span>
-                            <span class="text-lg font-bold text-white code-font" id="res-avg-time">--</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 反応速度（解答速度）の棒グラフ表示 (SVG) -->
-                <div class="bg-slate-950 p-6 rounded-xl border border-slate-800 col-span-1 md:col-span-2 flex flex-col justify-between">
-                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">設問ごとの解答時間分析 (ms)</h3>
-                    <div id="chart-area" class="h-40 flex items-end justify-between px-2 pt-6 pb-2 border-b border-slate-800">
-                        <!-- ここに動的にグラフバーが差し込まれます -->
-                    </div>
-                    <div class="flex justify-between text-[10px] text-slate-500 font-bold px-2 mt-1">
-                        <span>Q1</span><span>Q2</span><span>Q3</span><span>Q4</span><span>Q5</span>
-                        <span>Q6</span><span>Q7</span><span>Q8</span><span>Q9</span><span>Q10</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 詳細テーブル -->
-            <div class="bg-slate-950 rounded-xl border border-slate-800 overflow-hidden">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-slate-900 border-b border-slate-800 text-[11px] text-slate-400 uppercase font-bold tracking-wider">
-                            <th class="p-3">設問</th>
-                            <th class="p-3">問題テーマ</th>
-                            <th class="p-3">被験者の選択</th>
-                            <th class="p-3">判定</th>
-                            <th class="p-3">解答時間</th>
-                        </tr>
-                    </thead>
-                    <tbody id="res-table-body" class="text-xs divide-y divide-slate-900 text-slate-300">
-                        <!-- ここに動的にテーブル行が生成されます -->
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- アクションボタン -->
-            <div class="flex justify-between items-center pt-4 border-t border-slate-800">
-                <button onclick="resetSystem()" class="px-5 py-2.5 text-xs font-semibold text-slate-400 hover:text-white border border-slate-700 hover:border-slate-500 rounded-lg transition-colors">
-                    <i class="fa-solid fa-rotate-left mr-1"></i> 別の被験者で実験を行う
-                </button>
-                <button onclick="downloadCSV()" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-lg hover:shadow-emerald-500/20 active:scale-[0.98] transition-all flex items-center gap-1.5">
-                    <i class="fa-solid fa-file-csv"></i> 実験データ(CSV)をダウンロード
+            <div class="pt-8">
+                <button onclick="resetSystem()" class="px-8 py-3 bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-lg border border-slate-700 transition-colors flex items-center gap-2 shadow-lg">
+                    <i class="fa-solid fa-rotate-left"></i> 最初の画面に戻る
                 </button>
             </div>
         </section>
@@ -730,39 +670,6 @@
             document.getElementById('results-screen').classList.remove('hidden');
             document.getElementById('experiment-status-badge').innerText = "実験完了";
             document.getElementById('experiment-status-badge').className = "px-3 py-1 bg-emerald-950 text-emerald-400 text-xs font-bold rounded-full border border-emerald-800";
-
-            document.getElementById('res-subject-id').innerText = subjectId;
-            const groupText = { 'A': 'A (2D・無関係)', 'B': 'B (2D・同文脈：干渉大)', 'C': 'C (3D・同文脈：干渉緩和)' }[currentGroup];
-            document.getElementById('res-condition').innerText = groupText;
-
-            const correctCount = results.filter(r => r.isCorrect).length;
-            document.getElementById('res-accuracy').innerText = `${correctCount} / 10問 (${correctCount * 10}%)`;
-
-            const totalMs = results.reduce((acc, curr) => acc + curr.timeMs, 0);
-            const avgMs = Math.round(totalMs / results.length);
-            document.getElementById('res-avg-time').innerText = `${avgMs.toLocaleString()} ms`;
-
-            // 詳細結果テーブルの生成
-            const tbody = document.getElementById('res-table-body');
-            tbody.innerHTML = '';
-            results.forEach(res => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td class="p-3 code-font">Q${res.qNum}</td>
-                    <td class="p-3 font-semibold text-slate-200">${res.theme}</td>
-                    <td class="p-3 font-medium text-slate-300">${res.subjectAnswer}</td>
-                    <td class="p-3">
-                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${res.isCorrect ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-red-950 text-red-400 border border-red-800'}">
-                            ${res.isCorrect ? '正解' : '不正解'}
-                        </span>
-                    </td>
-                    <td class="p-3 code-font">${res.timeMs.toLocaleString()} ms</td>
-                `;
-                tbody.appendChild(tr);
-            });
-
-            // 解答スピードのバーチャートを動的描画
-            renderChart(results);
 
             // 実験が完了した瞬間にデータベースへ送信する
             sendDataToDatabase();
