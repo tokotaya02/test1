@@ -394,43 +394,6 @@
             }
         ];
 
-        // 1. ファイル読み込みハンドリング (ローカルのCORSエラー完全防止策)
-        function handleFileSelect(input, type) {
-            const file = input.files[0];
-            if (!file) return;
-
-            const label = document.getElementById(`label-${type}`);
-            const icon = document.getElementById(`icon-${type}`);
-            
-            label.innerText = `読み込み中... (${(file.size / 1024 / 1024).toFixed(1)}MB)`;
-            icon.className = "fa-solid fa-spinner fa-spin text-indigo-400 mb-2 text-xl";
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const arrayBuffer = e.target.result;
-                
-                // AudioContextの立ち上げ
-                initAudioContext();
-
-                audioCtx.decodeAudioData(arrayBuffer, function(buffer) {
-                    if (type === 'ramen') {
-                        ramenBuffer = buffer;
-                        label.innerText = "ラーメン話（条件A用）の読み込み完了！";
-                        icon.className = "fa-solid fa-check text-emerald-400 mb-2 text-xl";
-                    } else {
-                        melosBuffer = buffer;
-                        label.innerText = "メロスあらすじ（条件B・C用）の読み込み完了！";
-                        icon.className = "fa-solid fa-check text-emerald-400 mb-2 text-xl";
-                    }
-                    checkSetupReady();
-                }, function(err) {
-                    label.innerText = "エラー：非対応ファイル形式です";
-                    icon.className = "fa-solid fa-triangle-exclamation text-red-500 mb-2 text-xl";
-                });
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
         // Web Audio API 初期化
         function initAudioContext() {
             if (!audioCtx) {
@@ -440,6 +403,49 @@
                 audioCtx.resume();
             }
         }
+        // ページ読み込み時に自動でサーバーから音声をフェッチする
+        async function loadEmbeddedAudio() {
+            const statusText = document.getElementById('audio-status-text');
+            const statusIcon = document.getElementById('audio-status-icon');
+
+            try {
+                initAudioContext();
+
+                // ラーメン話（ramen.mp3）の取得とデコード
+                const resRamen = await fetch('/ramen.mp3');
+                if (!resRamen.ok) throw new Error("ramen.mp3が見つかりません");
+                const bufRamen = await resRamen.arrayBuffer();
+                audioCtx.decodeAudioData(bufRamen, (buffer) => {
+                    ramenBuffer = buffer;
+                    checkReady();
+                });
+
+                // メロス話（melos.mp3）の取得とデコード
+                const resMelos = await fetch('/melos.mp3');
+                if (!resMelos.ok) throw new Error("melos.mp3が見つかりません");
+                const bufMelos = await resMelos.arrayBuffer();
+                audioCtx.decodeAudioData(bufMelos, (buffer) => {
+                    melosBuffer = buffer;
+                    checkReady();
+                });
+            } catch (error) {
+                console.error(error);
+                statusText.innerText = "音声の読み込みに失敗しました。";
+                statusIcon.className = "fa-solid fa-triangle-exclamation text-red-500 mb-3 text-3xl";
+            }
+        }
+
+        // 両方の音声が読み込まれたか確認する
+        function checkReady() {
+            if (ramenBuffer && melosBuffer) {
+                document.getElementById('audio-status-text').innerText = "音声の準備が完了しました！";
+                document.getElementById('audio-status-icon').className = "fa-solid fa-circle-check text-emerald-400 mb-3 text-3xl";
+                checkSetupReady(); // 既存のチェック関数を呼び出す
+            }
+        }
+
+        // 画面が開かれたら自動で読み込み開始
+        window.addEventListener('DOMContentLoaded', loadEmbeddedAudio);
 
         // セットアップの検証
         function checkSetupReady() {
