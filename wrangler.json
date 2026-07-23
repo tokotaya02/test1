@@ -2,11 +2,8 @@
   "name": "test1",
   "main": "worker.js",
   "compatibility_date": "2026-07-10",
-  "rules":[
+  "rules": [
     { "type": "Text", "globs": ["*.html", "*.css"], "fallthrough": true }
-  ],
-  [
-    { "type": "Text", "globs": ["*.html", "*.css"] }
   ],
   "d1_databases": [
     {
