@@ -766,6 +766,9 @@
 
             // 解答スピードのバーチャートを動的描画
             renderChart(results);
+
+            // 実験が完了した瞬間にデータベースへ送信する
+            sendDataToDatabase();
         }
 
         // SVGによる簡易的なグラフ表示
@@ -830,6 +833,38 @@
             document.body.appendChild(link); 
             link.click();
             document.body.removeChild(link);
+        }
+        // 7. バックエンド（Cloudflare Workers）へのデータ送信
+        async function sendDataToDatabase() {
+            // 送信するデータをまとめる
+            const payload = {
+                subjectId: subjectId,
+                conditionGroup: currentGroup,
+                results: results
+            };
+
+            try {
+                // worker.jsの /submit エンドポイントへPOST送信
+                const response = await fetch("/submit", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    console.log("データベースへの保存が成功しました。");
+                    // 成功したことがわかるようにUIに少し表示を追加しても良いかもしれません
+                    document.getElementById('experiment-status-badge').innerText = "保存完了";
+                } else {
+                    console.error("データベース保存エラー:", await response.text());
+                    alert("データの保存に失敗しました。CSVをダウンロードしてバックアップしてください。");
+                }
+            } catch (error) {
+                console.error("通信エラー:", error);
+                alert("通信エラーが発生しました。CSVをダウンロードしてバックアップしてください。");
+            }
         }
 
         document.getElementById('subject-id').addEventListener('input', checkSetupReady);
