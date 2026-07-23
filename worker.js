@@ -22,7 +22,7 @@ export default {
             INSERT INTO experiment_results (
               subject_id, condition_group, question_number, theme, 
               correct_answer, subject_selection, is_correct, reaction_time_ms
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?)
           `).bind(
             data.subjectId,
             data.conditionGroup,
