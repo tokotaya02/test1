@@ -2,7 +2,10 @@
   "name": "test1",
   "main": "worker.js",
   "compatibility_date": "2026-07-10",
-  "rules": [
+  "rules":[
+    { "type": "Text", "globs": ["*.html", "*.css"], "fallthrough": true }
+  ],
+  [
     { "type": "Text", "globs": ["*.html", "*.css"] }
   ],
   "d1_databases": [
@@ -11,5 +14,11 @@
       "database_name": "test_db",
       "database_id": "c8bd6eaa-f2ea-46be-96fe-15712a8d2b2e"
     }
-  ]
+  ],
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true
+    }
+  }
 }
