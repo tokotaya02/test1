@@ -31,7 +31,7 @@ export default {
             res.correctWord,
             res.subjectAnswer,
             res.isCorrect ? 1 : 0, 
-            res.timeMs
+            res.timeMs / 1000
           );
         });
 
