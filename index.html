@@ -89,18 +89,9 @@
                         </h2>
                         
                         <!-- ドラッグ＆ドロップ領域 -->
-                        <div class="grid grid-cols-1 gap-3">
-                            <div class="border border-dashed border-slate-700 hover:border-indigo-500 rounded-lg p-4 text-center cursor-pointer bg-slate-900 transition-all" onclick="document.getElementById('file-ramen').click()">
-                                <input type="file" id="file-ramen" accept="audio/*" class="hidden" onchange="handleFileSelect(this, 'ramen')">
-                                <i class="fa-solid fa-bowl-food text-slate-500 mb-2 text-xl" id="icon-ramen"></i>
-                                <p class="text-xs font-semibold text-slate-300" id="label-ramen">無関係な雑談（ラーメン話）のWAV/MP3を選択</p>
-                            </div>
-
-                            <div class="border border-dashed border-slate-700 hover:border-indigo-500 rounded-lg p-4 text-center cursor-pointer bg-slate-900 transition-all" onclick="document.getElementById('file-melos').click()">
-                                <input type="file" id="file-melos" accept="audio/*" class="hidden" onchange="handleFileSelect(this, 'melos')">
-                                <i class="fa-solid fa-person-running text-slate-500 mb-2 text-xl" id="icon-melos"></i>
-                                <p class="text-xs font-semibold text-slate-300" id="label-melos">同じ文脈の雑談（メロスあらすじ）のWAV/MP3を選択</p>
-                            </div>
+                        <div class="bg-slate-900 border border-slate-800 rounded-lg p-6 text-center">
+                            <i id="audio-status-icon" class="fa-solid fa-spinner fa-spin text-indigo-400 mb-3 text-3xl"></i>
+                            <p id="audio-status-text" class="text-sm font-semibold text-slate-300">システムに音声を読み込んでいます...</p>
                         </div>
 
                         <!-- ステレオヘッドホン簡易テスト -->
