@@ -28,8 +28,6 @@ export default {
             data.conditionGroup,
             res.qNum,
             res.theme,
-            res.correctWord,
-            res.subjectAnswer,
             res.isCorrect ? 1 : 0, 
             res.timeMs / 1000
           );
