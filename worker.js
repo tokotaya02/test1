@@ -21,7 +21,7 @@ export default {
           return env.test.prepare(`
             INSERT INTO experiment_results (
               subject_id, condition_group, question_number, theme, 
-              correct_answer, subject_selection, is_correct, reaction_time_ms
+              is_correct, reaction_time_sec
             ) VALUES (?, ?, ?, ?, ?, ?)
           `).bind(
             data.subjectId,
